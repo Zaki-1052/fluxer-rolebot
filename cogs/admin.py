@@ -57,6 +57,39 @@ class Admin(Cog):
         await ctx.reply(f"Set role react message to `{msg_id}` in <#{channel_id}>.")
 
     @Cog.command()
+    async def sendmessage(self, ctx: fluxer.Message):
+        """
+        Send a message as the bot and configure it as the role reaction message.
+        Usage: `!role sendmessage <text>`
+        """
+        if ctx.guild_id is None:
+            await ctx.reply("This command can only be used in a server.")
+            return
+
+        if not await is_admin(self.bot, ctx):
+            await ctx.reply("You need administrator permissions to use this command.")
+            return
+
+        text = ctx.content.split("sendmessage", 1)[-1].strip()
+        if not text:
+            await ctx.reply("Please provide the message text. Usage: `!role sendmessage <text>`")
+            return
+
+        if self.bot._http is None:
+            await ctx.reply("HTTP client is not available.")
+            return
+
+        try:
+            response = await self.bot._http.send_message(ctx.channel_id, content=text)
+        except Exception as e:
+            await ctx.reply(f"Failed to send message: {e}")
+            return
+
+        msg_id = int(response["id"])
+        set_configured_message(ctx.guild_id, ctx.channel_id, msg_id)
+        await ctx.reply(f"Sent and configured as the role react message (`{msg_id}`).")
+
+    @Cog.command()
     async def removemessage(self, ctx: fluxer.Message):
         """
         Removes the configured role reaction message for the server.

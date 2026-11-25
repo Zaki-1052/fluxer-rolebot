@@ -44,7 +44,8 @@ All commands currently require administrator permissions. The default prefix is 
 
 | Command                      | Description                                     |
 | ---------------------------- | ----------------------------------------------- |
-| `!setmessage <message_link>` | Set the message users react on to receive roles |
+| `!sendmessage <text>`        | Send a message as the bot and set it as the role react message |
+| `!setmessage <message_link>` | Set an existing message as the role react message              |
 | `!removemessage`             | Remove the configured message                   |
 | `!add @Role <emoji>`         | Associate an emoji with a role                  |
 | `!remove <emoji>`            | Remove an emoji-role association                |

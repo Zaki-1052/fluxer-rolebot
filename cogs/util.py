@@ -30,6 +30,7 @@ class Util(Cog):
             "**Available Commands:**\n"
             f"`{prefix}ping` - Check if the bot is responsive.\n"
             f"`{prefix}help` - Display this help message.\n"
+            f"`{prefix}sendmessage <text>` - Send a message as the bot and set it as the role react message (admin only).\n"
             f"`{prefix}add <tag role> <emoji>` - Add a role reaction (admin only).\n"
             f"`{prefix}remove <emoji>` - Remove a role reaction (admin only).\n"
             f"`{prefix}setmessage <message_link>` - Configure the message for role reactions (admin only).\n"
