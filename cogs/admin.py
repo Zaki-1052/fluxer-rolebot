@@ -92,7 +92,10 @@ class Admin(Cog):
         try:
             response = await self.bot._http.send_message(ctx.channel_id, embed=make_embed(text))
         except Exception as e:
-            await ctx.reply(embed=make_embed(f"Failed to send message: {e}"))
+            try:
+                await ctx.reply(embed=make_embed(f"Failed to send message: {e}"))
+            except Exception:
+                await ctx.reply(f"Failed to send message: {e}")
             return
 
         msg_id = int(response["id"])
