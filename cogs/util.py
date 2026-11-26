@@ -1,8 +1,11 @@
+# cogs/util.py
 from fluxer import Cog
 
 from logging import getLogger
 
 import fluxer
+
+from util.embed import make_embed
 
 logger = getLogger(__name__)
 
@@ -16,7 +19,7 @@ class Util(Cog):
         """
         A simple command to check if the bot is responsive. Replies with "Pong!" when invoked.
         """
-        await ctx.reply("Pong!")
+        await ctx.reply(embed=make_embed("Pong!"))
 
     @Cog.command()
     async def help(self, ctx: fluxer.Message):
@@ -36,7 +39,7 @@ class Util(Cog):
             f"`{prefix}remove <emoji>` - Remove a role reaction from the most recent message (admin only).\n"
             f"`{prefix}removemessage [message_link]` - Remove a role react message and its associations (admin only).\n"
         )
-        await ctx.reply(help_message)
+        await ctx.reply(embed=make_embed(help_message))
 
 
 async def setup(bot: fluxer.Bot):

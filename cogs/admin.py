@@ -9,6 +9,7 @@ from util.database import (
     get_latest_configured_message,
     set_configured_message,
 )
+from util.embed import make_embed
 import logging
 
 logger = logging.getLogger(__name__)
@@ -49,21 +50,21 @@ class Admin(Cog):
         Multiple messages per server are supported.
         """
         if ctx.guild_id is None:
-            await ctx.reply("This command can only be used in a server.")
+            await ctx.reply(embed=make_embed("This command can only be used in a server."))
             return
 
         if not await is_admin(self.bot, ctx):
-            await ctx.reply("You need administrator permissions to use this command.")
+            await ctx.reply(embed=make_embed("You need administrator permissions to use this command."))
             return
 
         result = parse_message_link(ctx.content.split()[-1], ctx.guild_id)
         if isinstance(result, str):
-            await ctx.reply(result)
+            await ctx.reply(embed=make_embed(result))
             return
 
         channel_id, msg_id = result
         set_configured_message(ctx.guild_id, channel_id, msg_id)
-        await ctx.reply(f"Set role react message to `{msg_id}` in <#{channel_id}>.")
+        await ctx.reply(embed=make_embed(f"Set role react message to `{msg_id}` in <#{channel_id}>."))
 
     @Cog.command()
     async def sendmessage(self, ctx: fluxer.Message):
@@ -72,31 +73,31 @@ class Admin(Cog):
         Usage: `!role sendmessage <text>`
         """
         if ctx.guild_id is None:
-            await ctx.reply("This command can only be used in a server.")
+            await ctx.reply(embed=make_embed("This command can only be used in a server."))
             return
 
         if not await is_admin(self.bot, ctx):
-            await ctx.reply("You need administrator permissions to use this command.")
+            await ctx.reply(embed=make_embed("You need administrator permissions to use this command."))
             return
 
         text = ctx.content.split("sendmessage", 1)[-1].strip()
         if not text:
-            await ctx.reply("Please provide the message text. Usage: `!role sendmessage <text>`")
+            await ctx.reply(embed=make_embed("Please provide the message text. Usage: `!role sendmessage <text>`"))
             return
 
         if self.bot._http is None:
-            await ctx.reply("HTTP client is not available.")
+            await ctx.reply(embed=make_embed("HTTP client is not available."))
             return
 
         try:
-            response = await self.bot._http.send_message(ctx.channel_id, content=text)
+            response = await self.bot._http.send_message(ctx.channel_id, embed=make_embed(text))
         except Exception as e:
-            await ctx.reply(f"Failed to send message: {e}")
+            await ctx.reply(embed=make_embed(f"Failed to send message: {e}"))
             return
 
         msg_id = int(response["id"])
         set_configured_message(ctx.guild_id, ctx.channel_id, msg_id)
-        await ctx.reply(f"Sent and configured as the role react message (`{msg_id}`).")
+        await ctx.reply(embed=make_embed(f"Sent and configured as the role react message (`{msg_id}`)."))
 
     @Cog.command()
     async def removemessage(self, ctx: fluxer.Message):
@@ -106,11 +107,11 @@ class Admin(Cog):
         Without a link: removes the most recently configured message.
         """
         if ctx.guild_id is None:
-            await ctx.reply("This command can only be used in a server.")
+            await ctx.reply(embed=make_embed("This command can only be used in a server."))
             return
 
         if not await is_admin(self.bot, ctx):
-            await ctx.reply("You need administrator permissions to use this command.")
+            await ctx.reply(embed=make_embed("You need administrator permissions to use this command."))
             return
 
         # Check if a message link was provided.
@@ -121,21 +122,21 @@ class Admin(Cog):
         if has_link and link_word is not None:
             result = parse_message_link(link_word, ctx.guild_id)
             if isinstance(result, str):
-                await ctx.reply(result)
+                await ctx.reply(embed=make_embed(result))
                 return
             _, msg_id = result
         else:
             configured = get_latest_configured_message(ctx.guild_id)
             if configured is None:
-                await ctx.reply("No role react message is configured for this server.")
+                await ctx.reply(embed=make_embed("No role react message is configured for this server."))
                 return
             msg_id = configured["message_id"]
 
         if not delete_configured_message(ctx.guild_id, msg_id):
-            await ctx.reply("That message is not configured as a role react message.")
+            await ctx.reply(embed=make_embed("That message is not configured as a role react message."))
             return
 
-        await ctx.reply(f"Removed role react message `{msg_id}` and its role associations.")
+        await ctx.reply(embed=make_embed(f"Removed role react message `{msg_id}` and its role associations."))
 
 
 async def setup(bot: fluxer.Bot):

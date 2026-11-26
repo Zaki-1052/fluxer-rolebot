@@ -12,6 +12,7 @@ from util.database import (
     is_configured_message,
     set_role_association,
 )
+from util.embed import make_embed
 from util.events import handle_reaction
 
 from logging import getLogger
@@ -124,38 +125,38 @@ class ReactionHandling(Cog):
     async def add(self, ctx: fluxer.Message):
         """Add an emoji-role association to the most recently configured message."""
         if ctx.guild_id is None:
-            await ctx.reply("This command can only be used in a server.")
+            await ctx.reply(embed=make_embed("This command can only be used in a server."))
             return
 
         if not await is_admin(self.bot, ctx):
-            await ctx.reply("You need administrator permissions to use this command.")
+            await ctx.reply(embed=make_embed("You need administrator permissions to use this command."))
             return
 
         configured = get_latest_configured_message(ctx.guild_id)
         if configured is None:
-            await ctx.reply(
+            await ctx.reply(embed=make_embed(
                 "No role react message is configured. Use `!role setmessage <message_link>` or `!role sendmessage <text>` first."
-            )
+            ))
             return
 
         role_match = re.search(r"<@&(\d+)>", ctx.content)
         if role_match is None:
-            await ctx.reply("Please mention a role. Usage: `!role add @Role :emoji:`")
+            await ctx.reply(embed=make_embed("Please mention a role. Usage: `!role add @Role :emoji:`"))
             return
 
         role_id = int(role_match.group(1))
 
         after_role = ctx.content[role_match.end() :].strip()
         if not after_role:
-            await ctx.reply("Please provide an emoji. Usage: `!role add @Role :emoji:`")
+            await ctx.reply(embed=make_embed("Please provide an emoji. Usage: `!role add @Role :emoji:`"))
             return
 
         cleaned = parse_emoji(after_role)
 
         if get_role_association(ctx.guild_id, configured["message_id"], cleaned) is not None:
-            await ctx.reply(
+            await ctx.reply(embed=make_embed(
                 "That emoji is already associated with a role on this message."
-            )
+            ))
             return
 
         set_role_association(ctx.guild_id, configured["message_id"], role_id, cleaned)
@@ -169,43 +170,43 @@ class ReactionHandling(Cog):
             await role_message.add_reaction(api_emoji)
         except Exception as e:
             logger.error(f"Failed to add reaction: {e}")
-            await ctx.reply(
+            await ctx.reply(embed=make_embed(
                 f"Associated {after_role.split()[0]} with <@&{role_id}>, but failed to add reaction to message."
-            )
+            ))
             return
 
-        await ctx.reply(f"Associated {after_role.split()[0]} with <@&{role_id}>.")
+        await ctx.reply(embed=make_embed(f"Associated {after_role.split()[0]} with <@&{role_id}>."))
 
     @Cog.command()
     async def remove(self, ctx: fluxer.Message):
         """Remove an emoji-role association from the most recently configured message."""
         if ctx.guild_id is None:
-            await ctx.reply("This command can only be used in a server.")
+            await ctx.reply(embed=make_embed("This command can only be used in a server."))
             return
 
         if not await is_admin(self.bot, ctx):
-            await ctx.reply("You need administrator permissions to use this command.")
+            await ctx.reply(embed=make_embed("You need administrator permissions to use this command."))
             return
 
         configured = get_latest_configured_message(ctx.guild_id)
         if configured is None:
-            await ctx.reply(
+            await ctx.reply(embed=make_embed(
                 "No role react message is configured. Use `!role setmessage <message_link>` or `!role sendmessage <text>` first."
-            )
+            ))
             return
 
         after_cmd = ctx.content.split("remove", 1)[-1].strip()
         if not after_cmd:
-            await ctx.reply("Usage: `!role remove :emoji:`")
+            await ctx.reply(embed=make_embed("Usage: `!role remove :emoji:`"))
             return
 
         cleaned = parse_emoji(after_cmd)
 
         if not delete_role_association(ctx.guild_id, configured["message_id"], cleaned):
-            await ctx.reply("That emoji is not associated with any role on this message.")
+            await ctx.reply(embed=make_embed("That emoji is not associated with any role on this message."))
             return
 
-        await ctx.reply(f"Removed role association for {after_cmd.split()[0]}.")
+        await ctx.reply(embed=make_embed(f"Removed role association for {after_cmd.split()[0]}."))
 
 
 async def setup(bot: fluxer.Bot):
