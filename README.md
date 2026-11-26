@@ -1,6 +1,6 @@
 # fluxer-rolebot
 
-A reaction role bot for [Fluxer](https://fluxer.app). Administrators configure a message and associate emojis with roles. When users react, they automatically receive or lose the corresponding role.
+A reaction role bot for [Fluxer](https://fluxer.app). Administrators configure one or more messages and associate emojis with roles on each. When users react, they automatically receive or lose the corresponding role.
 
 Want to use this without hosting?
 
@@ -42,13 +42,13 @@ The bot stores data in a `data/` directory mounted as a volume. See the [Makefil
 
 All commands currently require administrator permissions. The default prefix is `!` (configurable via `COMMAND_PREFIX`).
 
-| Command                      | Description                                     |
-| ---------------------------- | ----------------------------------------------- |
-| `!sendmessage <text>`        | Send a message as the bot and set it as the role react message |
-| `!setmessage <message_link>` | Set an existing message as the role react message              |
-| `!removemessage`             | Remove the configured message                   |
-| `!add @Role <emoji>`         | Associate an emoji with a role                  |
-| `!remove <emoji>`            | Remove an emoji-role association                |
+| Command                                | Description                                                             |
+| -------------------------------------- | ----------------------------------------------------------------------- |
+| `!sendmessage <text>`                  | Send a message as the bot and configure it as a role react message      |
+| `!setmessage <message_link>`           | Set an existing message as a role react message                         |
+| `!removemessage [message_link]`        | Remove a role react message and its associations (defaults to latest)   |
+| `!add @Role <emoji>`                   | Add an emoji-role association to the most recently configured message   |
+| `!remove <emoji>`                      | Remove an emoji-role association from the most recently configured message |
 
 ## Environment Variables
 

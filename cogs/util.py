@@ -30,11 +30,11 @@ class Util(Cog):
             "**Available Commands:**\n"
             f"`{prefix}ping` - Check if the bot is responsive.\n"
             f"`{prefix}help` - Display this help message.\n"
-            f"`{prefix}sendmessage <text>` - Send a message as the bot and set it as the role react message (admin only).\n"
-            f"`{prefix}add <tag role> <emoji>` - Add a role reaction (admin only).\n"
-            f"`{prefix}remove <emoji>` - Remove a role reaction (admin only).\n"
-            f"`{prefix}setmessage <message_link>` - Configure the message for role reactions (admin only).\n"
-            f"`{prefix}removemessage` - Remove the configured role reaction message (admin only).\n"
+            f"`{prefix}sendmessage <text>` - Send a message as the bot and set it as a role react message (admin only).\n"
+            f"`{prefix}setmessage <message_link>` - Set an existing message as a role react message (admin only).\n"
+            f"`{prefix}add @Role <emoji>` - Add a role reaction to the most recent message (admin only).\n"
+            f"`{prefix}remove <emoji>` - Remove a role reaction from the most recent message (admin only).\n"
+            f"`{prefix}removemessage [message_link]` - Remove a role react message and its associations (admin only).\n"
         )
         await ctx.reply(help_message)
 

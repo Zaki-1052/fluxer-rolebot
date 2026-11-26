@@ -1,3 +1,4 @@
+# cogs/reaction_handling.py
 import re
 import emoji
 import fluxer
@@ -6,8 +7,9 @@ from fluxer import Cog
 from util.admin import is_admin
 from util.database import (
     delete_role_association,
-    get_configured_message,
+    get_latest_configured_message,
     get_role_association,
+    is_configured_message,
     set_role_association,
 )
 from util.events import handle_reaction
@@ -63,8 +65,7 @@ def get_reaction_role_id(
     bot: fluxer.Client, guild_id: int, user_id: int, message_id: int, emoji_str: str
 ) -> int | None:
     """
-    Check if the reaction corresponds to a configured role reaction and return the associated role ID.
-    Also performs checks to ensure the reaction is on the configured message and not from a bot.
+    Check if the reaction is on any configured message and return the associated role ID.
 
     Args:
         guild_id: The ID of the guild where the reaction occurred
@@ -75,11 +76,10 @@ def get_reaction_role_id(
     if bot.user is None or user_id == bot.user.id:
         return None
 
-    configured = get_configured_message(guild_id)
-    if configured is None or message_id != configured["message_id"]:
+    if not is_configured_message(guild_id, message_id):
         return None
 
-    return get_role_association(guild_id, emoji_str)
+    return get_role_association(guild_id, message_id, emoji_str)
 
 
 class ReactionHandling(Cog):
@@ -122,6 +122,7 @@ class ReactionHandling(Cog):
 
     @Cog.command()
     async def add(self, ctx: fluxer.Message):
+        """Add an emoji-role association to the most recently configured message."""
         if ctx.guild_id is None:
             await ctx.reply("This command can only be used in a server.")
             return
@@ -130,10 +131,10 @@ class ReactionHandling(Cog):
             await ctx.reply("You need administrator permissions to use this command.")
             return
 
-        configured = get_configured_message(ctx.guild_id)
+        configured = get_latest_configured_message(ctx.guild_id)
         if configured is None:
             await ctx.reply(
-                "No role react message is configured. Use `!role setmessage <message_link>` first."
+                "No role react message is configured. Use `!role setmessage <message_link>` or `!role sendmessage <text>` first."
             )
             return
 
@@ -151,13 +152,13 @@ class ReactionHandling(Cog):
 
         cleaned = parse_emoji(after_role)
 
-        if get_role_association(ctx.guild_id, cleaned) is not None:
+        if get_role_association(ctx.guild_id, configured["message_id"], cleaned) is not None:
             await ctx.reply(
-                "That emoji is already associated with a role in this server."
+                "That emoji is already associated with a role on this message."
             )
             return
 
-        set_role_association(ctx.guild_id, role_id, cleaned)
+        set_role_association(ctx.guild_id, configured["message_id"], role_id, cleaned)
 
         role_message = await self.bot.fetch_message(
             configured["channel_id"], configured["message_id"]
@@ -177,6 +178,7 @@ class ReactionHandling(Cog):
 
     @Cog.command()
     async def remove(self, ctx: fluxer.Message):
+        """Remove an emoji-role association from the most recently configured message."""
         if ctx.guild_id is None:
             await ctx.reply("This command can only be used in a server.")
             return
@@ -185,9 +187,10 @@ class ReactionHandling(Cog):
             await ctx.reply("You need administrator permissions to use this command.")
             return
 
-        if get_configured_message(ctx.guild_id) is None:
+        configured = get_latest_configured_message(ctx.guild_id)
+        if configured is None:
             await ctx.reply(
-                "No role react message is configured. Use `!role setmessage <message_link>` first."
+                "No role react message is configured. Use `!role setmessage <message_link>` or `!role sendmessage <text>` first."
             )
             return
 
@@ -198,8 +201,8 @@ class ReactionHandling(Cog):
 
         cleaned = parse_emoji(after_cmd)
 
-        if not delete_role_association(ctx.guild_id, cleaned):
-            await ctx.reply("That emoji is not associated with any role.")
+        if not delete_role_association(ctx.guild_id, configured["message_id"], cleaned):
+            await ctx.reply("That emoji is not associated with any role on this message.")
             return
 
         await ctx.reply(f"Removed role association for {after_cmd.split()[0]}.")

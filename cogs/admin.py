@@ -1,16 +1,40 @@
+# cogs/admin.py
 import fluxer
 from fluxer import Cog
 from urllib.parse import urlparse
 
 from util.admin import is_admin
 from util.database import (
-    delete_configured_message_id,
-    get_configured_message,
+    delete_configured_message,
+    get_latest_configured_message,
     set_configured_message,
 )
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def parse_message_link(text: str, expected_guild_id: int) -> tuple[int, int] | str:
+    """Parse a message link and return (channel_id, message_id) or an error string."""
+    parsed_link = urlparse(text)
+    if not parsed_link.path:
+        return "Invalid message link format."
+
+    split_path = parsed_link.path.split("/")
+    if len(split_path) < 5 or split_path[-4] != "channels":
+        return "Invalid message link format."
+
+    try:
+        guild_id = int(split_path[-3])
+        channel_id = int(split_path[-2])
+        msg_id = int(split_path[-1])
+    except ValueError:
+        return "Invalid message link format."
+
+    if guild_id != expected_guild_id:
+        return "The linked message must be in the same server."
+
+    return (channel_id, msg_id)
 
 
 class Admin(Cog):
@@ -20,8 +44,9 @@ class Admin(Cog):
     @Cog.command()
     async def setmessage(self, ctx: fluxer.Message):
         """
-        Configure the message that users will react to for role assignment. The command expects a link to the message in the format: `!role setmessage <message_link>`.
-        The channel and message ID are extracted from the link and stored in the database for later reference when handling reactions.
+        Configure an existing message as a role reaction message.
+        Usage: `!role setmessage <message_link>`
+        Multiple messages per server are supported.
         """
         if ctx.guild_id is None:
             await ctx.reply("This command can only be used in a server.")
@@ -31,35 +56,19 @@ class Admin(Cog):
             await ctx.reply("You need administrator permissions to use this command.")
             return
 
-        parsed_link = urlparse(ctx.content.split()[-1])
-        if not parsed_link.path:
-            await ctx.reply("Invalid message link format.")
+        result = parse_message_link(ctx.content.split()[-1], ctx.guild_id)
+        if isinstance(result, str):
+            await ctx.reply(result)
             return
 
-        split_path = parsed_link.path.split("/")
-        if len(split_path) < 5 or split_path[-4] != "channels":
-            await ctx.reply("Invalid message link format.")
-            return
-
-        try:
-            guild_id = int(split_path[-3])
-            channel_id = int(split_path[-2])
-            msg_id = int(split_path[-1])
-        except ValueError:
-            await ctx.reply("Invalid message link format.")
-            return
-
-        if guild_id != ctx.guild_id:
-            await ctx.reply("The linked message must be in the same server.")
-            return
-
+        channel_id, msg_id = result
         set_configured_message(ctx.guild_id, channel_id, msg_id)
         await ctx.reply(f"Set role react message to `{msg_id}` in <#{channel_id}>.")
 
     @Cog.command()
     async def sendmessage(self, ctx: fluxer.Message):
         """
-        Send a message as the bot and configure it as the role reaction message.
+        Send a message as the bot and configure it as a role reaction message.
         Usage: `!role sendmessage <text>`
         """
         if ctx.guild_id is None:
@@ -92,7 +101,9 @@ class Admin(Cog):
     @Cog.command()
     async def removemessage(self, ctx: fluxer.Message):
         """
-        Removes the configured role reaction message for the server.
+        Remove a configured role reaction message and its role associations.
+        With a message link: removes that specific message.
+        Without a link: removes the most recently configured message.
         """
         if ctx.guild_id is None:
             await ctx.reply("This command can only be used in a server.")
@@ -102,12 +113,29 @@ class Admin(Cog):
             await ctx.reply("You need administrator permissions to use this command.")
             return
 
-        if get_configured_message(ctx.guild_id) is None:
-            await ctx.reply("No role react message is configured for this server.")
+        # Check if a message link was provided.
+        words = ctx.content.split()
+        link_word = words[-1] if len(words) > 1 else None
+        has_link = link_word is not None and "channels/" in link_word
+
+        if has_link and link_word is not None:
+            result = parse_message_link(link_word, ctx.guild_id)
+            if isinstance(result, str):
+                await ctx.reply(result)
+                return
+            _, msg_id = result
+        else:
+            configured = get_latest_configured_message(ctx.guild_id)
+            if configured is None:
+                await ctx.reply("No role react message is configured for this server.")
+                return
+            msg_id = configured["message_id"]
+
+        if not delete_configured_message(ctx.guild_id, msg_id):
+            await ctx.reply("That message is not configured as a role react message.")
             return
 
-        delete_configured_message_id(ctx.guild_id)
-        await ctx.reply("Removed the role react message configuration.")
+        await ctx.reply(f"Removed role react message `{msg_id}` and its role associations.")
 
 
 async def setup(bot: fluxer.Bot):
