@@ -37,7 +37,9 @@ class Util(Cog):
             f"`{prefix}setmessage <message_link>` - Set an existing message as a role react message (admin only).\n"
             f"`{prefix}add @Role <emoji>` - Add a role reaction to the most recent message (admin only).\n"
             f"`{prefix}remove <emoji>` - Remove a role reaction from the most recent message (admin only).\n"
-            f"`{prefix}removemessage [message_link]` - Remove a role react message and its associations (admin only).\n"
+            f"`{prefix}editmessage [message_link] <text>` - Edit a role react message (admin only).\n"
+            f"`{prefix}listmessages` - List all configured role react messages (admin only).\n"
+            f"`{prefix}removemessage [link or ID]` - Remove a role react message and its associations (admin only).\n"
         )
         await ctx.reply(embed=make_embed(help_message))
 

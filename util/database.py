@@ -41,6 +41,33 @@ def get_latest_configured_message(guild_id: int) -> dict | None:
     }
 
 
+def get_configured_messages(guild_id: int) -> list[dict]:
+    """Return all configured messages for a guild, newest first."""
+    Row = Query()
+    results = message_table.search(
+        (Row.guild_id == guild_id) & (Row.configured_message_id.exists())
+    )
+    results.sort(key=lambda r: r.get("created_at", 0), reverse=True)
+    return [
+        {
+            "channel_id": r["channel_id"],
+            "message_id": r["configured_message_id"],
+            "created_at": r.get("created_at", 0),
+        }
+        for r in results
+    ]
+
+
+def count_role_associations(guild_id: int, message_id: int) -> int:
+    """Count how many emoji-role associations exist for a message."""
+    Row = Query()
+    return len(
+        roles_table.search(
+            (Row.guild_id == guild_id) & (Row.message_id == message_id)
+        )
+    )
+
+
 def is_configured_message(guild_id: int, message_id: int) -> bool:
     """Check if a message is any configured reaction-role message for the guild."""
     Row = Query()
